@@ -2,7 +2,7 @@
 
 **#Description**\
 This perl script converts coordinates of a specific region on a chromosome from GRCh38 assembly to GRCh37 assembly using Ensembl Perl API. 
-Ensembl API retrieves queried data from a MySQL relational databas with the help of various objects(such as, frequently used; Gene, Slice, and Exon objects stored in the database through object adaptors), methods(such as; get_all(), fetch_all()), and class(such as, Slice; to get information on this class one can do "perldoc Bio::EnsEMBL::Slice") parameters of the API. Moreover, sequences in Ensembl database are associated with coordinate system which varies from species to species. For example, Homo Sapiens database has the following coordinate systems: supercontig, chromosome, clone, contig. Relationship between these coordinates are stored in the database and the means is provided by the API to convert these coordinates.
+Ensembl Perl API retrieves queried data from a MySQL relational database with the help of various objects(such as, frequently used; Gene, Slice, and Exon objects stored in the database through object adaptors), methods(such as; get_all(), fetch_all()), and class(such as, Slice; to get information on this class one can do "perldoc Bio::EnsEMBL::Slice") parameters of the API. Moreover, sequences in Ensembl database are associated with coordinate system which varies from species to species. For example, Homo Sapiens database has the following coordinate systems: supercontig, chromosome, clone, contig. Relationship between these coordinates are stored in the database and the means is provided by the API to convert these coordinates.
 
 #**Installation**\
 The perl API installation instructions can be found here:

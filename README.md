@@ -56,7 +56,7 @@ http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/
 #USAGE
 >liftOver input.bed hg38ToHg19.over.chain.gz output.bed
 
-Where, "input.bed" is the input bed file in the format "chr <start of chromosome region> <end of chromosome region>", "hg18ToHg19.over.chain.gz" is the liftover data file to convert hg18 coordinates to hg19, and "output.bed" is the output bed file.
+Where, "input.bed" is the input bed file in the format "chr \<start of chromosome region\> \<end of chromosome region\>", "hg18ToHg19.over.chain.gz" is the liftover data file to convert hg18 coordinates to hg19, and "output.bed" is the output bed file.
 
 B) Ensembl REST API: REpresentational State Transfer API is a lanuguage agnostic method to access remote data on Ensembl database.\
 https://rest.ensembl.org/documentation/info/assembly_map

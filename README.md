@@ -1,4 +1,4 @@
-**Map Chromosome Regions From One Assembly(GRCh38) to Another(GRCh37)**
+**Map Chromosome Regions Between Assemblies**
 
 **#Description**\
 This perl script converts coordinates of a specific region on a chromosome from GRCh38 assembly to GRCh37 assembly using Ensembl Perl API. 

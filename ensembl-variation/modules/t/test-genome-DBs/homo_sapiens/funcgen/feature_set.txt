@@ -1,0 +1,12 @@
+446	9	41	14		annotated	\N
+383	9	41	4		annotated	\N
+453	9	41	7		annotated	\N
+454	9	41	15		annotated	\N
+466	9	41	1		annotated	\N
+467	9	41	18		annotated	\N
+496	9	41	16		annotated	\N
+538	9	41	2		annotated	\N
+649	9	47	17		annotated	\N
+801	9	47	23		annotated	\N
+812	9	47	22		annotated	\N
+823	9	47	21		annotated	\N

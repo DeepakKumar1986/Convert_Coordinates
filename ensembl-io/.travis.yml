@@ -1,0 +1,81 @@
+language: "perl"
+
+sudo: false
+
+cache:
+  apt: false
+  directories:
+    - $HOME/perl5/perlbrew
+    - $HOME/dependencies
+
+perl:
+  - "5.26"
+  - "5.14"
+#  - "5.12"
+#  - "5.10"
+
+# env:
+#  - COVERALLS=true  DB=mysql
+  # - COVERALLS=false DB=mysql
+#  - COVERALLS=false DB=sqlite
+
+addons:
+  apt:
+    packages:
+      - unzip
+      - apache2
+      - libpng12-dev
+      - libssl-dev
+      - openssl
+
+services:
+  - mysql
+
+before_install:
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-test.git
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl.git
+    - git clone --branch master --depth 1 https://github.com/Ensembl/ensembl-variation.git
+    - export CWD=$PWD
+    - export DEPS=$HOME/dependencies
+    - mkdir -p $DEPS
+    - cd $DEPS
+    - $CWD/travisci/get_dependencies.sh
+    - cd $CWD
+
+install:
+    - export CWD=$PWD
+    - export DEPS=$HOME/dependencies
+    - export KENT_SRC="$DEPS/kent-335_base/src"
+    - export HTSLIB_DIR=$DEPS/htslib
+    - export MACHTYPE=$(uname -m)
+    - export CFLAGS="-fPIC"
+    - export PERL5LIB=$DEPS/bioperl-live-release-1-6-924:$PERL5LIB
+    - cd $DEPS
+    - $CWD/travisci/build_c.sh
+    - cd $CWD
+    - cpanm -v --installdeps --with-recommends --notest --cpanfile ensembl/cpanfile .
+    - cpanm -v --installdeps --notest .
+    - cpanm Bio::DB::HTS
+    - cpanm -n Devel::Cover::Report::Coveralls
+    - cpanm -n DBD::SQLite
+    - mysql -u root -h localhost -e 'GRANT ALL PRIVILEGES ON *.* TO "travis"@"%"'
+#    - cp travisci/MultiTestDB.conf.travisci.mysql  modules/t/MultiTestDB.conf.mysql
+#    - cp travisci/MultiTestDB.conf.travisci.SQLite modules/t/MultiTestDB.conf.SQLite
+
+
+script: "./travisci/harness.sh"
+
+# Get the matrix to only build coveralls support when on 5.10
+# matrix:
+#   exclude:
+#     - perl: "5.10"
+#       env: COVERALLS=false DB=mysql
+#     - perl: "5.12"
+#       env: COVERALLS=false DB=sqlite
+#     - perl: "5.12"
+#       env: COVERALLS=true  DB=mysql
+#     - perl: "5.14"
+#       env: COVERALLS=false DB=sqlite
+#     - perl: "5.14"
+#       env: COVERALLS=true  DB=mysql
+#

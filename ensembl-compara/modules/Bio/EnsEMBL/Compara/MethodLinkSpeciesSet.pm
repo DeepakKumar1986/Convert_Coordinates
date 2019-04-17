@@ -1,0 +1,501 @@
+=head1 LICENSE
+
+Copyright [1999-2015] Wellcome Trust Sanger Institute and the EMBL-European Bioinformatics Institute
+Copyright [2016-2019] EMBL-European Bioinformatics Institute
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+=cut
+
+
+=head1 CONTACT
+
+  Please email comments or questions to the public Ensembl
+  developers list at <http://lists.ensembl.org/mailman/listinfo/dev>.
+
+  Questions may also be sent to the Ensembl help desk at
+  <http://www.ensembl.org/Help/Contact>.
+
+=head1 NAME
+
+Bio::EnsEMBL::Compara::MethodLinkSpeciesSet -
+Relates every method_link with the species_set for which it has been used
+
+=head1 SYNOPSIS
+
+  use Bio::EnsEMBL::Compara::MethodLinkSpeciesSet;
+  my $method_link_species_set = Bio::EnsEMBL::Compara::MethodLinkSpeciesSet->new(
+                       -adaptor             => $method_link_species_set_adaptor,
+                       -method              => Bio::EnsEMBL::Compara::Method->new( -type => 'MULTIZ'),
+                       -species_set     => Bio::EnsEMBL::Compara::SpeciesSet->new( -genome_dbs => [$gdb1, $gdb2, $gdb3]),
+                       -max_alignment_length => 10000,
+                   );
+
+SET VALUES
+  $method_link_species_set->dbID( 12 );
+  $method_link_species_set->adaptor( $mlss_adaptor );
+  $method_link_species_set->method( Bio::EnsEMBL::Compara::Method->new( -type => 'MULTIZ') );
+  $method_link_species_set->species_set( Bio::EnsEMBL::Compara::SpeciesSet->new( -genome_dbs => [$gdb1, $gdb2, $gdb3]) );
+  $method_link_species_set->max_alignment_length( 10000 );
+
+GET VALUES
+  my $mlss_id           = $method_link_species_set->dbID();
+  my $mlss_adaptor      = $method_link_species_set->adaptor();
+  my $method            = $method_link_species_set->method();
+  my $method_link_id    = $method_link_species_set->method->dbID();
+  my $method_link_type  = $method_link_species_set->method->type();
+  my $species_set       = $method_link_species_set->species_set();
+  my $species_set_id    = $method_link_species_set->species_set->dbID();
+  my $genome_dbs        = $method_link_species_set->species_set->genome_dbs();
+  my $max_alignment_length = $method_link_species_set->max_alignment_length();
+
+=head1 APPENDIX
+
+The rest of the documentation details each of the object methods. Internal methods are usually preceded with a _
+
+=cut
+
+
+
+package Bio::EnsEMBL::Compara::MethodLinkSpeciesSet;
+
+use strict;
+use warnings;
+
+use Bio::EnsEMBL::Utils::Exception qw(throw warning);
+use Bio::EnsEMBL::Utils::Argument qw(rearrange);
+use Bio::EnsEMBL::Utils::Scalar qw(:assert);
+use Bio::EnsEMBL::Compara::Method;
+use Bio::EnsEMBL::Compara::SpeciesSet;
+
+use base (  'Bio::EnsEMBL::Compara::StorableWithReleaseHistory',           # inherit dbID(), adaptor() and new() methods, and first_release() and last_release()
+            'Bio::EnsEMBL::Compara::Taggable'   # inherit everything related to tagability
+         );
+
+my $DEFAULT_MAX_ALIGNMENT = 20000;
+
+
+=head2 new (CONSTRUCTOR)
+
+  Arg [-DBID]           : (opt.) int $dbID (the database internal ID for this object)
+  Arg [-ADAPTOR]        : (opt.) Bio::EnsEMBL::Compara::DBSQL::MethodLinkSpeciesSetAdaptor $adaptor
+                            (the adaptor for connecting to the database)
+  Arg [-METHOD]         : Bio::EnsEMBL::Compara::Method $method object
+  Arg [-SPECIES_SET]    : Bio::EnsEMBL::Compara::SpeciesSet $species_set object
+  Arg [-NAME]           : (opt.) string $name (the name for this method_link_species_set)
+  Arg [-SOURCE]         : (opt.) string $source (the source of these data)
+  Arg [-URL]            : (opt.) string $url (the original url of these data)
+  Arg [-MAX_ALGINMENT_LENGTH]
+                        : (opt.) int $max_alignment_length (the length of the largest alignment
+                            for this MethodLinkSpeciesSet (only used for genomic alignments)
+  Example     : my $method_link_species_set = Bio::EnsEMBL::Compara::MethodLinkSpeciesSet->new(
+                       -adaptor => $method_link_species_set_adaptor,
+                       -method => Bio::EnsEMBL::Compara::Method->new( -type => 'MULTIZ' ),
+                       -species_set => Bio::EnsEMBL::Compara::SpeciesSet->new( -genome_dbs => [$gdb1, $gdb2, $gdb3] ),
+                       -max_alignment_length => 10000,
+                   );
+  Description : Creates a new MethodLinkSpeciesSet object
+  Returntype  : Bio::EnsEMBL::Compara::MethodLinkSpeciesSet object
+  Exceptions  : none
+  Caller      : general
+
+=cut
+
+sub new {
+    my $caller = shift @_;
+    my $class = ref($caller) || $caller;
+
+    my $self = $class->SUPER::new(@_);  # deal with Storable stuff
+
+    my ($method, $species_set,
+        $name, $source, $url, $max_alignment_length) =
+            rearrange([qw(
+                METHOD SPECIES_SET
+                NAME SOURCE URL MAX_ALIGNMENT_LENGTH)], @_);
+
+  if($method) {
+      $self->method($method);
+  } else {
+      warning("method has not been set in MLSS->new");
+  }
+
+  if ($species_set) {
+      $self->species_set($species_set);
+  } else {
+      warning("species_set has not been set in MLSS->new");
+  }
+
+  $self->name($name) if (defined ($name));
+  $self->source($source) if (defined ($source));
+  $self->url($url) if (defined ($url));
+  $self->max_alignment_length($max_alignment_length) if (defined ($max_alignment_length));
+
+  return $self;
+}
+
+
+
+=head2 method
+
+  Arg [1]    : (opt.) Bio::EnsEMBL::Compara::Method object
+  Example    : my $method_object = $method_link_species_set->method();
+  Example    : $method_link_species_set->method( $method_object );
+  Description: get/set for attribute method
+  Returntype : Bio::EnsEMBL::Compara::Method
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub method {
+    my ($self, $method) = @_;
+
+    if($method) {
+        if(ref($method) eq 'HASH') {
+            $method = Bio::EnsEMBL::Compara::Method->new( %$method ) or die "Could not automagically create a Method\n";
+        }
+
+        $self->{'method'} = $method;
+    }
+
+    return $self->{'method'};
+}
+
+
+=head2 species_set
+
+  Arg [1]    : (opt.) Bio::EnsEMBL::Compara::SpeciesSet species_set object
+  Example    : my $species_set = $mlss->species_set();
+  Example    : $mlss->species_set( $species_set );
+  Description: getter/setter for species_set attribute
+  Returntype : Bio::EnsEMBL::Compara::SpeciesSet
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub species_set {
+    my ($self, $species_set) = @_;
+
+    if($species_set) {
+        if(ref($species_set) eq 'HASH') {
+            $species_set = Bio::EnsEMBL::Compara::SpeciesSet->new( %$species_set ) or die "Could not automagically create a SpeciesSet\n";
+        }
+
+        $self->{'species_set'} = $species_set;
+    }
+
+    return $self->{'species_set'};
+}
+
+
+
+
+=head2 name
+
+  Arg [1]    : (opt.) string $name
+  Example    : my $name = $method_link_species_set->name();
+  Example    : $method_link_species_set->name("families");
+  Description: get/set for attribute name
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub name {
+  my ($self, $arg) = @_;
+
+  if (defined($arg)) {
+    $self->{'name'} = $arg ;
+  }
+
+  return $self->{'name'};
+}
+
+
+=head2 source
+
+  Arg [1]    : (opt.) string $name
+  Example    : my $name = $method_link_species_set->source();
+  Example    : $method_link_species_set->source("ensembl");
+  Description: get/set for attribute source. The source refers to who
+               generated the data in a first instance (ensembl, ucsc...)
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub source {
+  my ($self, $arg) = @_;
+
+  if (defined($arg)) {
+    $self->{'source'} = $arg ;
+  }
+
+  return $self->{'source'};
+}
+
+
+=head2 url
+
+  Arg [1]    : (opt.) string $url
+  Example    : my $url = $method_link_species_set->url();
+  Example    : $method_link_species_set->url("http://hgdownload.cse.ucsc.edu/goldenPath/monDom1/vsHg17/");
+  Description: get/set for attribute url. Defines where the data come from if they
+               have been imported. Note that some urls are defined with #base_dir# in the database to
+               represent a part that has to be substituted with runtime configuration. This method returns
+               the substituted URL.
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub url {
+  my ($self, $arg) = @_;
+
+  if (defined($arg)) {
+    $self->{'url'} = $arg ;
+  }
+  if ($self->{'url'} && ($self->{'url'} =~ /^#base_dir#/)) {
+      die "Need an adaptor to resolve the location of ".$self->{'url'} unless $self->adaptor;
+
+      my $data_dir = $self->adaptor->base_dir_location;
+      my $url = $self->{'url'};
+      #warn "<- $url";
+      $url =~ s/#base_dir#/$data_dir/;
+      $url =~ s/\/multi\/+multi\//\/multi\//;    # temporary hack for e88 production until the database has been updated
+      #warn "-> $url";
+
+      if (-e $url) {
+          $self->{'original_url'} = $url;
+          $self->{'url'} = $url;
+      } else {
+          die "'$url' does not exist on this machine\n";
+      }
+  }
+
+  return $self->{'url'};
+}
+
+
+=head2 get_original_url
+
+  Example    : my $url = $method_link_species_set->get_original_url();
+  Description: Returns the URL as stored in the database (before substitution)
+  Returntype : string
+  Exceptions : none
+  Caller     : general
+
+=cut
+
+sub get_original_url {
+    my $self = shift;
+
+    return ($self->{'original_url'} || $self->{'url'});
+}
+
+
+=head2 max_alignment_length
+
+  Arg [1]    : (opt.) int $max_alignment_length
+  Example    : my $max_alignment_length = $method_link_species_set->
+                   max_alignment_length();
+  Example    : $method_link_species_set->max_alignment_length(1000);
+  Description: get/set for attribute max_alignment_length
+  Returntype : integer
+  Exceptions : 
+  Caller     : general
+
+=cut
+
+sub max_alignment_length {
+    my $self = shift @_;
+    return $self->_getter_setter_for_tag('max_align', @_) || $DEFAULT_MAX_ALIGNMENT;
+}
+
+
+=head2 toString
+
+  Args       : (none)
+  Example    : print $mlss->toString()."\n";
+  Description: returns a stringified representation of the method_link_species_set
+  Returntype : string
+
+=cut
+
+sub toString {
+    my $self = shift;
+
+    my $txt = sprintf('MethodLinkSpeciesSet dbID=%s', $self->dbID || '?');
+    $txt .= ' ' . ($self->name ? sprintf('"%s"', $self->name) : '(unnamed)');
+    $txt .= sprintf(' {method "%s"} x {species-set "%s"}', $self->method->type, $self->species_set->name || $self->species_set->dbID);
+    $txt .= ', found in '.$self->url if $self->url;
+    $txt .= ' ' . $self->SUPER::toString();
+    return $txt;
+}
+
+
+=head2 species_tree
+
+  Arg[1]      : (optional) String $label (default: "default"). The label of the species-tree to retrieve
+  Example     : $mlss->species_tree();
+  Description : Returns the species-tree associated to this MLSS
+  Returntype  : Bio::EnsEMBL::Compara::SpeciesTree
+  Exceptions  : none
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub species_tree {
+    my ($self, $label) = @_;
+
+    $label ||= 'default';
+    my $key = '_species_tree_'.$label;
+    return $self->{$key} if $self->{$key};
+
+    my $species_tree = $self->adaptor->db->get_SpeciesTreeAdaptor->fetch_by_method_link_species_set_id_label($self->dbID, $label);
+
+    $self->{$key} = $species_tree;
+    return $species_tree;
+}
+
+=head2 filename
+
+  Example     : $mlss->filename();
+  Description : Returns a nicely formatted directory/file name for this MLSS
+  Returntype  : string
+
+=cut
+
+sub filename {
+    my $self = shift;
+
+    my $name = $self->species_set->name;
+    $name =~ s/collection-//;
+
+    if ( $self->species_set->size > 2 && $self->method->class !~ /tree_node$/ ) {
+        $name = $self->species_set->size . "_$name";
+    }
+    
+    # expand species names to include assembly
+    if ( $self->species_set->size == 2 ) {
+        my ($ref_gdb, $nonref_gdb) = $self->_find_pairwise_ref($self->species_set->genome_dbs);
+        $name = $ref_gdb->get_short_name . "_" . $ref_gdb->assembly . '.v.';
+        $name .= $nonref_gdb->get_short_name . "_" . $nonref_gdb->assembly;
+    } elsif ( $self->species_set->size == 1 && $self->method->class =~ /pairwise/ ) { # self alignment!
+        my $self_aln_gdb = $self->species_set->genome_dbs->[0];
+        my $species_label = $self_aln_gdb->get_short_name . "_" . $self_aln_gdb->assembly;
+        $name = "$species_label.v.$species_label";
+    }
+
+    my $type = $self->method->type;
+    my $dir = lc "$name.$type";
+    return $dir;
+}
+
+sub _find_pairwise_ref {
+    my ( $self, $genome_dbs ) = @_;
+
+    # first, check for mlss_tags
+    my $ref_name = $self->_getter_setter_for_tag('reference_species');
+    $ref_name ||= '';
+    if ( $genome_dbs->[0]->name eq $ref_name ) {
+        return @$genome_dbs; # list was already in correct order
+    } elsif ( $genome_dbs->[1]->name eq $ref_name ) {
+        return ( $genome_dbs->[1], $genome_dbs->[0] );
+    } else {
+        # if tag is not set, always place usual references at the start
+        my @ref_list = ( 'homo_sapiens', 'mus_musculus', 'gallus_gallus', 'oryzias_latipes' );
+        foreach my $ref_name ( @ref_list ) {
+            if ( grep { $genome_dbs->[0]->name eq $_ } @ref_list ) {
+                return @$genome_dbs; # order was already correct
+            } elsif ( grep { $genome_dbs->[1]->name eq $_ } @ref_list ) {
+                return ( $genome_dbs->[1], $genome_dbs->[0] );
+            }
+        }
+
+        # finally, give up and return alphabetical order
+        my @sorted = @$genome_dbs;
+        @sorted = sort { $a->name cmp $b->name } @sorted;
+        return @sorted; 
+    }
+}
+
+
+=head2 get_all_sister_mlss_by_class
+
+  Arg[1]      : String $class
+  Example     : $mlss->get_all_sister_mlss_by_class('ConstrainedElement.constrained_element');
+  Description : Returns the MLSS with the same species-set but a different method
+  Returntype  : Arrayref of Bio::EnsEMBL::Compara::MethodLinkSpeciesSet
+  Exceptions  : none
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub get_all_sister_mlss_by_class {
+    my ($self, $class) = @_;
+    return unless $self->adaptor;
+    my $sql = 'SELECT method_link_species_set_id FROM method_link_species_set JOIN method_link USING (method_link_id) WHERE class = ? AND species_set_id = ?';
+    return $self->adaptor->_id_cache->get_by_sql($sql, [$class, $self->species_set->dbID]);
+}
+
+
+=head2 get_linked_mlss_by_tag
+
+  Arg[1]      : String $tag_name
+  Example     : $msa_mlss = $cs_mlss->get_linked_mlss_by_tag('msa_mlss_id');
+  Description : Returns the MLSS with the dbID given by the value of the tag
+  Returntype  : Bio::EnsEMBL::Compara::MethodLinkSpeciesSet
+  Exceptions  : none
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub get_linked_mlss_by_tag {
+    my ($self, $tag_name) = @_;
+    return unless $self->adaptor;
+    if (my $mlss_id = $self->get_value_for_tag($tag_name)) {
+        return $self->adaptor->fetch_by_dbID($mlss_id);
+    }
+}
+
+
+=head2 get_all_linked_mlss_by_class_and_reverse_tag
+
+  Arg[1]      : String $class
+  Arg[2]      : String $tag_name
+  Example     : $ce_mlss = $msa_mlss->get_all_linked_mlss_by_class_and_reverse_tag('ConstrainedElement.constrained_element', 'msa_mlss_id')->[0];
+  Description : Returns all the MLSSs of the required class that link back to this MLSS via the tag.
+  Returntype  : Arrayref of Bio::EnsEMBL::Compara::MethodLinkSpeciesSet
+  Exceptions  : none
+  Caller      : general
+  Status      : Stable
+
+=cut
+
+sub get_all_linked_mlss_by_class_and_reverse_tag {
+    my ($self, $class, $tag_name) = @_;
+    return unless $self->adaptor;
+    my $sql = 'SELECT method_link_species_set_id FROM method_link_species_set_tag JOIN method_link_species_set USING (method_link_species_set_id) JOIN method_link USING (method_link_id) WHERE class = ? AND tag = ? AND value = ?';
+    return $self->adaptor->_id_cache->get_by_sql($sql, [$class, $tag_name, $self->dbID]);
+}
+
+
+1;

@@ -17,13 +17,13 @@ To execute the script, simply run:
 **#Usage**\
 To convert coordinates of your region of interest on a chromosome from one assembly to another, modify this section of the script:
 
-my $slice = $slice_adaptor->fetch_by_region( 'chromosome', '10', 25000, 30000 );
+>my $slice = $slice_adaptor->fetch_by_region( 'chromosome', '10', 25000, 30000 );
 
 where, "chromosome" is the coordinate system, '10' is the chromosome number, and 25000 and 30000 are the start and the end of the region.
 
 To convert the coordinates of your region of interest to your assembly of interest; modify this section of the script:
 
-my $slice2 = $slice->project( 'chromosome', 'GRCh37' );
+>my $slice2 = $slice->project( 'chromosome', 'GRCh37' );
 
 where, "project" is the method used to project the region of interest onto another coordinate system version (in this case GRCh37). You can use onther coordinate system version instead of "GRCh37" to project the region of interest to.
 
@@ -54,7 +54,7 @@ http://hgdownload.cse.ucsc.edu/goldenpath/hg38/liftOver/ \
 http://hgdownload.cse.ucsc.edu/goldenpath/hg19/liftOver/
 
 #USAGE\
-liftOver input.bed hg38ToHg19.over.chain.gz output.bed
+>liftOver input.bed hg38ToHg19.over.chain.gz output.bed
 
 Where, "input.bed" is the input bed file in the format "chr <start of chromosome region> <end of chromosome region>", "hg18ToHg19.over.chain.gz" is the liftover data file to convert hg18 coordinates to hg19, and "output.bed" is the output bed file.
 
@@ -62,7 +62,7 @@ B) Ensembl REST API: REpresentational State Transfer API is a lanuguage agnostic
 https://rest.ensembl.org/documentation/info/assembly_map
 
 #USAGE\
-wget -q --header='Content-type:application/json' 'https://rest.ensembl.org/map/human/GRCh38/10:25000..30000:1/GRCh37?'  -O -
+>wget -q --header='Content-type:application/json' 'https://rest.ensembl.org/map/human/GRCh38/10:25000..30000:1/GRCh37?'  -O -
 
 C) NCBI Genome Remapping Service: is a tool to project annotation data from one coordinate system to another. It has web service and API.
 

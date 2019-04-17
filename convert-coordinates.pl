@@ -42,7 +42,7 @@ Slice: chromosome 10 25000-30000 (1)
 Coordinate system: chromosome GRCh38
 
 #######################################
-Conveted Coordinates in GRCh37:
+Converted Coordinates in GRCh37:
 10:1-846 -> 10:70936-71781:1
 10:847-1247 -> 10:71784-72184:1
 10:1250-2609 -> 10:72185-73544:1

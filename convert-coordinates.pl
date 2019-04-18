@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 =begin comment
+# Script to convert coordinates from region 25000 to 30000 of chromosome 10 in GRCh38 to the same region in GRCh37
 # I followed the Perl API installation instructions from "https://asia.ensembl.org/info/docs/api/api_installation.html" to install the Perl API
 
 #The Perl version I have on my cluster is compatible for API installation:
